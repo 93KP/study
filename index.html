@@ -2,55 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ebook Access</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Ebook Access</title>
 
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- PDF.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.min.js"></script>
+
   <style>
+    /* ===== Body & Layout ===== */
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 50px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #e0f7fa, #80deea);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-top: 40px;
+      color: #00796b;
       text-align: center;
     }
-    input {
-      padding: 10px;
-      width: 250px;
-      font-size: 16px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin-left: 5px;
-      cursor: pointer;
-    }
-    #msg {
-      margin-top: 15px;
-      color: red;
-      font-weight: bold;
-    }
-    #pdfViewer {
-      width: 100%;
-      height: 80vh;
-      border: 1px solid #ccc;
+
+    /* ===== Input Section ===== */
+    .login-container {
       margin-top: 20px;
-      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90%;
+      max-width: 400px;
+      background: #ffffffcc;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
     }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #b2dfdb;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background-color: #00796b;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #004d40;
+    }
+
+    #msg {
+      margin-top: 10px;
+      font-weight: bold;
+      color: red;
+      text-align: center;
+    }
+
+    /* ===== PDF Viewer ===== */
+    #pdfViewer {
+      margin-top: 30px;
+      width: 95%;
+      max-width: 900px;
+      height: 80vh;
+      border-radius: 10px;
+      overflow: auto;
+      box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+      background-color: #f5f5f5;
+    }
+
     canvas {
       display: block;
-      margin: 0 auto 20px auto;
+      margin: 20px auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
     }
+
+    /* ===== Responsive ===== */
+    @media(max-width:600px){
+      h1 { font-size: 24px; }
+      .login-container { padding: 15px; }
+      input[type="password"], button { font-size: 14px; padding: 10px; }
+      #pdfViewer { height: 70vh; }
+    }
+
   </style>
 </head>
 <body>
 
-<h2>Enter Password to Access Ebook</h2>
-<input type="password" id="password" placeholder="Enter password">
-<button onclick="login()">Open</button>
-<div id="msg"></div>
+<h1>Secure Ebook Access</h1>
+
+<div class="login-container">
+  <input type="password" id="password" placeholder="Enter your password">
+  <button onclick="login()">Open Ebook</button>
+  <div id="msg"></div>
+</div>
 
 <div id="pdfViewer"></div>
 
@@ -61,77 +123,78 @@
   const SUPABASE_URL = "https://myaaijkmljjtdfoouwgt.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_vdD93tHbk2vuDtGPsFEHMw_2iBQgXu3";
 
-  // Create Supabase client
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   async function login() {
-    const pass = document.getElementById("password").value.trim();
+    const password = document.getElementById("password").value.trim();
     const msg = document.getElementById("msg");
     const viewer = document.getElementById("pdfViewer");
 
     msg.innerText = "";
     viewer.innerHTML = "";
 
-    if (!pass) {
-      msg.innerText = "Enter a password!";
+    if(!password){
+      msg.innerText = "Please enter a password!";
       return;
     }
 
     try {
-      // 1️⃣ Check password in 'users' table
+      // ✅ Check password in Supabase users table
       const { data, error } = await supabaseClient
-        .from("users")          // Table name MUST match exactly
+        .from("users")
         .select("pdf_file")
-        .eq("password", pass)
-        .eq("status", "active")
+        .eq("password", password)
+        .eq("status","active")
         .single();
 
-      if (error || !data) {
-        msg.innerText = "Invalid or disabled password!";
+      if(error || !data){
+        msg.innerText = "Invalid or inactive password!";
         return;
       }
 
-      // 2️⃣ Create signed URL for private PDF
+      // ✅ Create signed URL (5 min expiry)
       const { data: signed, error: signErr } = await supabaseClient
         .storage
-        .from("ebooks")         // Bucket name MUST match exactly
-        .createSignedUrl(data.pdf_file, 300); // 300 = 5 minutes
+        .from("ebooks")
+        .createSignedUrl(data.pdf_file, 300);
 
-      if (signErr) {
-        msg.innerText = "Error opening file!";
+      if(signErr){
+        msg.innerText = "Error generating PDF URL!";
         console.error(signErr);
         return;
       }
 
-      // 3️⃣ Fetch PDF as ArrayBuffer
-      const response = await fetch(signed.signedUrl);
+      // ✅ Fetch PDF as ArrayBuffer with cache bypass
+      const urlWithNoCache = signed.signedUrl + "?v=" + Date.now();
+      const response = await fetch(urlWithNoCache);
+      if(!response.ok) throw new Error("Failed to fetch PDF");
+
       const pdfData = await response.arrayBuffer();
 
-      // 4️⃣ Render PDF using PDF.js
+      // ✅ Render PDF using PDF.js
       const loadingTask = pdfjsLib.getDocument({ data: pdfData });
-      loadingTask.promise.then(function(pdf) {
-          viewer.innerHTML = ""; // clear previous
-
-          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-              pdf.getPage(pageNum).then(function(page) {
-                  const scale = 1.5;
-                  const viewport = page.getViewport({ scale: scale });
-                  const canvas = document.createElement("canvas");
-                  const context = canvas.getContext("2d");
-                  canvas.height = viewport.height;
-                  canvas.width = viewport.width;
-                  viewer.appendChild(canvas);
-                  page.render({ canvasContext: context, viewport: viewport });
-              });
-          }
-      }).catch(function(err){
-          console.error(err);
-          msg.innerText = "Failed to load PDF!";
+      loadingTask.promise.then(pdf => {
+        viewer.innerHTML = "";
+        for(let i=1;i<=pdf.numPages;i++){
+          pdf.getPage(i).then(page => {
+            const scale = 1.5;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            viewer.appendChild(canvas);
+            page.render({ canvasContext: ctx, viewport });
+          });
+        }
+      }).catch(err => {
+        console.error(err);
+        msg.innerText = "Failed to render PDF!";
       });
 
-    } catch (err) {
-      msg.innerText = "Unexpected error! Check console.";
+    } catch(err){
       console.error(err);
+      msg.innerText = "Unexpected error! Check console logs.";
     }
   }
 </script>

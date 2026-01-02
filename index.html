@@ -50,7 +50,7 @@
   const SUPABASE_URL = "https://myaaijkmljjtdfoouwgt.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_vdD93tHbk2vuDtGPsFEHMw_2iBQgXu3";
 
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   async function login() {
     const pass = document.getElementById("password").value.trim();

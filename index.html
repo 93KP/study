@@ -78,7 +78,7 @@
     }
 
     try {
-      // Check password in 'users' table
+      // 1️⃣ Check password in 'users' table
       const { data, error } = await supabaseClient
         .from("users")          // Table name MUST match exactly
         .select("pdf_file")
@@ -91,7 +91,7 @@
         return;
       }
 
-      // Create signed URL for private PDF
+      // 2️⃣ Create signed URL for private PDF
       const { data: signed, error: signErr } = await supabaseClient
         .storage
         .from("ebooks")         // Bucket name MUST match exactly
@@ -103,8 +103,12 @@
         return;
       }
 
-      // Render PDF using PDF.js
-      const loadingTask = pdfjsLib.getDocument(signed.signedUrl);
+      // 3️⃣ Fetch PDF as ArrayBuffer
+      const response = await fetch(signed.signedUrl);
+      const pdfData = await response.arrayBuffer();
+
+      // 4️⃣ Render PDF using PDF.js
+      const loadingTask = pdfjsLib.getDocument({ data: pdfData });
       loadingTask.promise.then(function(pdf) {
           viewer.innerHTML = ""; // clear previous
 

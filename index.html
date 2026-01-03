@@ -4,34 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HIDDEN TRUTH - Ebook Access</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- PDF.js library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
 <style>
-:root{
-  --accent1:#0ea5a4;
-  --accent2:#0369a1;
-  --glass: rgba(255,255,255,0.85);
-}
 body{
   margin:0;
   font-family: Arial, sans-serif;
   background: linear-gradient(135deg,#071b2f,#063b4a);
   color:#fff;
   display:flex;
-  flex-direction:column;
-  align-items:center;
   justify-content:center;
-  height:100vh;
+  align-items:center;
+  flex-direction:column;
+  min-height:100vh;
   padding:20px;
 }
 .card{
-  background: var(--glass);
+  background: rgba(255,255,255,0.95);
   border-radius:16px;
   padding:30px;
-  max-width:400px;
+  max-width:600px;
   width:100%;
-  box-shadow:0 12px 40px rgba(0,0,0,0.4);
   text-align:center;
   color:#072a2a;
+  box-shadow:0 12px 40px rgba(0,0,0,0.4);
+  margin-bottom:20px;
 }
 .card h1{margin:0 0 10px; font-size:28px; color:#0369a1;}
 .card p{margin:5px 0 20px;}
@@ -47,21 +45,23 @@ button{
   padding:12px;
   border:none;
   border-radius:10px;
-  background: linear-gradient(90deg,var(--accent1),var(--accent2));
+  background: linear-gradient(90deg,#0ea5a4,#0369a1);
   color:white;
   font-size:16px;
   font-weight:bold;
   cursor:pointer;
+  width:100%;
 }
 button:active{transform:translateY(1px);}
 #status{margin-top:12px; font-size:14px; color:#0369a1;}
-footer{position:absolute;bottom:10px; font-size:12px; opacity:0.7;}
-@media(max-width:500px){.card{padding:20px;}}
+#pdf-container{display:none; width:100%; max-width:600px; height:80vh; overflow:auto; border:1px solid #ccc;}
+canvas{display:block; margin: 10px auto;}
+footer{font-size:12px; opacity:0.7; margin-top:10px;}
 </style>
 </head>
 <body>
 
-<div class="card">
+<div class="card" id="password-card">
   <h1>HIDDEN TRUTH</h1>
   <p>Enter password to unlock the ebook</p>
   <input type="password" id="password" placeholder="Enter your password">
@@ -69,48 +69,57 @@ footer{position:absolute;bottom:10px; font-size:12px; opacity:0.7;}
   <p id="status"></p>
 </div>
 
+<div id="pdf-container"></div>
+
 <footer>© 2026 Kushagra</footer>
 
 <script>
-const SUPABASE_URL = "https://myaaijkmljjtdfoouwgt.supabase.co";
-const SUPABASE_KEY = "sb_publishable_vdD93tHbk2vuDtGPsFEHMw_2iBQgXu3";
-const PDF_URL = "https://myaaijkmljjtdfoouwgt.supabase.co/storage/v1/object/public/ebooks/ht.pdf";
+// Allowed passwords
+const passwords = ["pass1","pass2","pass3","pass4","pass5"]; // add your passwords
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// PDF file location on GitHub raw URL
+const PDF_URL = "https://raw.githubusercontent.com/93KP/study/main/ht.pdf";
 
-document.getElementById("unlockBtn").addEventListener("click", async ()=>{
-  const pw = document.getElementById("password").value.trim();
-  const statusEl = document.getElementById("status");
+const unlockBtn = document.getElementById("unlockBtn");
+const passwordInput = document.getElementById("password");
+const statusEl = document.getElementById("status");
+const passwordCard = document.getElementById("password-card");
+const pdfContainer = document.getElementById("pdf-container");
 
+unlockBtn.addEventListener("click", async ()=>{
+  const pw = passwordInput.value.trim();
   if(!pw){ statusEl.textContent="Enter a password"; return; }
-  statusEl.textContent="Verifying password...";
 
-  try{
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("password", pw)
-      .eq("status", "active")
-      .single();
-
-    if(error){
-      statusEl.textContent="Invalid password or error";
-      return;
-    }
-
-    if(data){
-      statusEl.textContent="Password correct! Redirecting...";
-      // Redirect after 1 second
-      setTimeout(()=>{ window.location.href = PDF_URL; }, 800);
-    } else {
-      statusEl.textContent="Invalid password";
-    }
-
-  }catch(err){
-    console.error(err);
-    statusEl.textContent="Unexpected error";
+  if(passwords.includes(pw)){
+    statusEl.textContent="Password correct! Loading PDF...";
+    passwordCard.style.display="none";
+    pdfContainer.style.display="block";
+    renderPDF(PDF_URL);
+  }else{
+    statusEl.textContent="Invalid password";
   }
 });
+
+// Function to render PDF using PDF.js
+async function renderPDF(url){
+  const loadingTask = pdfjsLib.getDocument(url);
+  const pdf = await loadingTask.promise;
+
+  pdfContainer.innerHTML = ""; // Clear previous if any
+
+  for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    pdfContainer.appendChild(canvas);
+
+    await page.render({canvasContext:context, viewport:viewport}).promise;
+  }
+}
 </script>
 
 </body>

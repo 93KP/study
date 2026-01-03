@@ -184,66 +184,38 @@ footer {
 <footer>
   © 2026 • Secure Digital Distribution System
 </footer>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://myaaijkmljjtdfoouwgt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_vdD93tHbk2vuDtGPsFEHMw_2iBQgXu3";
-
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function openPDF() {
-  const password = document.getElementById("password").value.trim();
   const msg = document.getElementById("msg");
-  const frame = document.getElementById("pdfFrame");
-  const viewer = document.getElementById("viewer");
+  msg.style.color = "red";
+  msg.innerText = "Button clicked. JS is running.";
 
-  msg.style.color = "#b91c1c";
-  msg.innerText = "";
-  viewer.style.display = "none";
+  const password = document.getElementById("password").value.trim();
 
   if (!password) {
-    msg.innerText = "Please enter a password.";
+    msg.innerText = "Password empty.";
     return;
   }
 
-  msg.innerText = "Verifying access...";
+  msg.innerText = "Querying database...";
 
-  try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("pdf_file")
-      .eq("password", password)
-      .eq("status", "active")
-      .single();
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .limit(1);
 
-    if (error) {
-      msg.innerText = "Access error: " + error.message;
-      return;
-    }
-
-    if (!data) {
-      msg.innerText = "Invalid password.";
-      return;
-    }
-
-    const { data: signed, error: signErr } = await supabase
-      .storage
-      .from("ebooks")
-      .createSignedUrl(data.pdf_file, 300);
-
-    if (signErr) {
-      msg.innerText = "File error: " + signErr.message;
-      return;
-    }
-
-    frame.src = signed.signedUrl + "#toolbar=0&navpanes=0&scrollbar=0";
-    viewer.style.display = "block";
-    msg.style.color = "#065f46";
-    msg.innerText = "Access granted. Enjoy your ebook.";
-
-  } catch (e) {
-    msg.innerText = "Unexpected error: " + e.message;
+  if (error) {
+    msg.innerText = "❌ DB ERROR: " + error.message;
+    return;
   }
+
+  msg.style.color = "green";
+  msg.innerText = "✅ JS + Supabase working!";
 }
 </script>
 

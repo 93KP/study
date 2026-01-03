@@ -1,27 +1,7 @@
 <!DOCTYPE html>
 <html>
 <body>
-<input id="pw" placeholder="password">
-<button onclick="go()">TEST</button>
-<pre id="out"></pre>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const supabase = supabase.createClient(
-  "https://myaaijkmljjtdfoouwgt.supabase.co",
-  "sb_publishable_vdD93tHbk2vuDtGPsFEHMw_2iBQgXu3"
-);
-
-async function go(){
-  const p = document.getElementById("pw").value;
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("password", p);
-
-  document.getElementById("out").textContent =
-    JSON.stringify({data, error}, null, 2);
-}
-</script>
+<h1>JS TEST</h1>
+<button onclick="alert('JS WORKING')">CLICK ME</button>
 </body>
 </html>

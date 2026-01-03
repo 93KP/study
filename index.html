@@ -1,43 +1,222 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PDF Test</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Ebook Reader</title>
+<!-- Supabase client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.min.js"></script>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 50px;
-    background: #f0f4f8;
-  }
-  button {
-    padding: 14px 22px;
-    font-size: 18px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(90deg,#0ea5a4,#0369a1);
-    color: white;
-    cursor: pointer;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    transition: transform 0.15s;
-  }
-  button:active { transform: translateY(2px); }
+:root{
+  --accent1:#0ea5a4;
+  --accent2:#0369a1;
+  --muted:#6b7280;
+  --glass: rgba(255,255,255,0.85);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg,#071b2f,#063b4a);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+header{
+  text-align:center;
+  padding:30px 20px;
+}
+header h1{margin:0;font-size:28px;}
+header p{margin:6px 0;font-size:16px;color:#b0e0e6;}
+main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px;
+}
+.card{
+  background: var(--glass);
+  border-radius:16px;
+  padding:24px;
+  max-width:500px;
+  width:100%;
+  box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  color:#072a2a;
+  margin-bottom:20px;
+}
+.card h2{margin-top:0;font-size:22px;color:#0369a1;}
+input[type=password]{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  font-size:16px;
+  margin-bottom:12px;
+}
+button{
+  padding:12px 16px;
+  border:none;
+  border-radius:10px;
+  background: linear-gradient(90deg,var(--accent1),var(--accent2));
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+  width:100%;
+  font-weight:bold;
+}
+button:active{transform:translateY(1px);}
+.reader{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.95);
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  overflow:auto;
+  padding:20px;
+}
+.reader canvas{
+  display:block;
+  margin:16px auto;
+}
+.close-btn{
+  position:absolute;
+  top:16px;
+  right:16px;
+  background:rgba(255,255,255,0.1);
+  color:white;
+  border:none;
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+}
+.watermark{
+  position:fixed;
+  bottom:10px;
+  left:10px;
+  color:rgba(255,255,255,0.05);
+  font-size:12px;
+  pointer-events:none;
+}
+footer{
+  text-align:center;
+  padding:14px 0;
+  font-size:12px;
+  opacity:0.7;
+}
+@media(max-width:600px){
+  .card{padding:16px;}
+}
 </style>
 </head>
 <body>
 
-<h1>Click to Open PDF</h1>
-<button id="openPdfBtn">Open PDF</button>
+<header>
+  <h1>HIDDEN TRUTH</h1>
+  <p>Enter your password to access the ebook</p>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Beyond Independence</h2>
+    <p>by Kushagra Pal</p>
+    <input type="password" id="password" placeholder="Enter password">
+    <button id="unlockBtn">Unlock Ebook</button>
+    <p id="status" style="margin-top:8px;font-size:14px;color:#0369a1;"></p>
+  </div>
+</main>
+
+<!-- Reader Overlay -->
+<div class="reader" id="reader">
+  <button class="close-btn" id="closeReader">Close</button>
+  <div id="canvasContainer"></div>
+  <div class="watermark" id="watermark"></div>
+</div>
+
+<footer>© 2026 Kushagra • Supabase + PDF.js</footer>
 
 <script>
-const pdfUrl = "https://myaaijkmljjtdfoouwgt.supabase.co/storage/v1/object/public/ebooks/ht.pdf";
+const SUPABASE_URL = "https://myaaijkmljjtdfoouwgt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_vdD93tHbk2vuDtGPsFEHMw_2iBQgXu3";
+const BUCKET_PUBLIC_URL = "https://myaaijkmljjtdfoouwgt.supabase.co/storage/v1/object/public/ebooks/";
+const PDF_NAME = "ht.pdf";
 
-document.getElementById("openPdfBtn").addEventListener("click", ()=>{
-    // opens PDF in a new browser tab
-    window.open(pdfUrl, "_blank");
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const unlockBtn = document.getElementById("unlockBtn");
+const passwordInput = document.getElementById("password");
+const statusEl = document.getElementById("status");
+const reader = document.getElementById("reader");
+const canvasContainer = document.getElementById("canvasContainer");
+const closeReader = document.getElementById("closeReader");
+const watermark = document.getElementById("watermark");
+
+// PDF.js setup
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.worker.min.js';
+
+async function renderPDF(url, watermarkText){
+  canvasContainer.innerHTML = "";
+  watermark.innerText = watermarkText;
+  const loadingTask = pdfjsLib.getDocument(url);
+  const pdf = await loadingTask.promise;
+  for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({scale:1.5});
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvasContainer.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    await page.render({canvasContext:ctx, viewport}).promise;
+  }
+  reader.style.display="flex";
+}
+
+unlockBtn.addEventListener("click", async ()=>{
+  const pw = passwordInput.value.trim();
+  if(!pw){ statusEl.textContent="Enter a password"; return; }
+  statusEl.textContent="Verifying password...";
+
+  try{
+    const {data, error} = await supabase
+      .from("users")
+      .select("*")
+      .eq("password", pw)
+      .eq("status", "active")
+      .single();
+
+    if(error){
+      statusEl.textContent="Error: "+error.message;
+      return;
+    }
+    if(!data){
+      statusEl.textContent="Invalid password";
+      return;
+    }
+
+    const url = BUCKET_PUBLIC_URL + PDF_NAME + "?v="+Date.now();
+    const watermarkText = `Access: ${pw} • ${new Date().toLocaleString()}`;
+    await renderPDF(url, watermarkText);
+    statusEl.textContent="Ebook unlocked!";
+  }catch(e){
+    console.error(e);
+    statusEl.textContent="Unexpected error: "+e.message;
+  }
+});
+
+closeReader.addEventListener("click", ()=>{
+  reader.style.display="none";
+  canvasContainer.innerHTML="";
+  watermark.innerText="";
+  passwordInput.value="";
+  statusEl.textContent="";
 });
 </script>
 

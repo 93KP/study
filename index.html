@@ -1,7 +1,18 @@
 <!DOCTYPE html>
 <html>
 <body>
-<h1>JS TEST</h1>
-<button onclick="alert('JS WORKING')">CLICK ME</button>
+<h2>Supabase Load Test</h2>
+<button onclick="test()">TEST</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+function test(){
+  if(window.supabase){
+    alert("Supabase loaded");
+  } else {
+    alert("Supabase NOT loaded");
+  }
+}
+</script>
 </body>
 </html>

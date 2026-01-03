@@ -1,18 +1,34 @@
 <!DOCTYPE html>
 <html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
 <body>
-<h2>Supabase Load Test</h2>
-<button onclick="test()">TEST</button>
+
+<h2>Password Debug Test</h2>
+
+<input id="pw" placeholder="password">
+<button onclick="check()">CHECK</button>
+
+<pre id="out" style="background:#eee;padding:10px;margin-top:10px"></pre>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-function test(){
-  if(window.supabase){
-    alert("Supabase loaded");
-  } else {
-    alert("Supabase NOT loaded");
-  }
+const supabase = supabase.createClient(
+  "https://myaaijkmljjtdfoouwgt.supabase.co",
+  "sb_publishable_vdD93tHbk2vuDtGPsFEHMw_2iBQgXu3"
+);
+
+async function check(){
+  const pass = document.getElementById("pw").value;
+  const { data, error } = await supabase
+    .from("users")
+    .select("*");
+
+  document.getElementById("out").textContent =
+    JSON.stringify({data, error}, null, 2);
 }
 </script>
+
 </body>
 </html>

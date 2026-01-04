@@ -1,168 +1,460 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Secure Ebook Access</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hidden Truth — Secure Reader</title>
 
+<!-- PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.min.js"></script>
-
-<style>
-body{
-  margin:0;
-  font-family:system-ui,Segoe UI,Arial;
-  background:linear-gradient(135deg,#020617,#0f172a);
-  color:#e5e7eb;
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:16px;
-}
-.card{
-  width:100%;
-  max-width:420px;
-  background:rgba(255,255,255,0.07);
-  border-radius:18px;
-  padding:26px;
-  text-align:center;
-  backdrop-filter:blur(12px);
-  box-shadow:0 20px 60px rgba(0,0,0,.6);
-}
-h1{margin:0 0 8px}
-p{font-size:14px;opacity:.85}
-input{
-  width:100%;
-  padding:14px;
-  margin-top:14px;
-  border-radius:12px;
-  border:none;
-  background:rgba(255,255,255,.12);
-  color:#fff;
-}
-button{
-  width:100%;
-  margin-top:14px;
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  font-weight:700;
-  cursor:pointer;
-  background:linear-gradient(90deg,#22d3ee,#3b82f6);
-}
-#status{margin-top:10px;font-size:13px}
-#pdf-container{
-  display:none;
-  width:100%;
-  max-width:1000px;
-  height:100vh;
-  overflow:auto;
-}
-canvas{
-  width:100%!important;
-  height:auto!important;
-  background:#fff;
-  margin:12px auto;
-  border-radius:8px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="card" id="login">
-  <h1>Hidden Truth</h1>
-  <p>Enter your password to unlock the ebook</p>
-  <input type="password" id="password" placeholder="userXXXX">
-  <button id="unlock">Unlock</button>
-  <div id="status"></div>
-</div>
-
-<div id="pdf-container"></div>
-
 <script>
-/* ================= PASSWORD MAP (RANDOMIZED) ================= */
-
-/* Note: URLs now use your GitHub Pages domain so PDF.js can fetch them without CORS problems */
-const accessMap = {
-  /* ---- ht.pdf (100 random) ---- */
-  "user4827":"https://93kp.github.io/study/ht.pdf","user9173":"https://93kp.github.io/study/ht.pdf","user3048":"https://93kp.github.io/study/ht.pdf","user6912":"https://93kp.github.io/study/ht.pdf",
-  "user5384":"https://93kp.github.io/study/ht.pdf","user1769":"https://93kp.github.io/study/ht.pdf","user8421":"https://93kp.github.io/study/ht.pdf","user2957":"https://93kp.github.io/study/ht.pdf",
-  "user6041":"https://93kp.github.io/study/ht.pdf","user7198":"https://93kp.github.io/study/ht.pdf","user3582":"https://93kp.github.io/study/ht.pdf","user9246":"https://93kp.github.io/study/ht.pdf",
-  "user4670":"https://93kp.github.io/study/ht.pdf","user5819":"https://93kp.github.io/study/ht.pdf","user7391":"https://93kp.github.io/study/ht.pdf","user2146":"https://93kp.github.io/study/ht.pdf",
-  "user8903":"https://93kp.github.io/study/ht.pdf","user1658":"https://93kp.github.io/study/ht.pdf","user6724":"https://93kp.github.io/study/ht.pdf","user4019":"https://93kp.github.io/study/ht.pdf",
-  "user7536":"https://93kp.github.io/study/ht.pdf","user2891":"https://93kp.github.io/study/ht.pdf","user9462":"https://93kp.github.io/study/ht.pdf","user5107":"https://93kp.github.io/study/ht.pdf",
-  "user3289":"https://93kp.github.io/study/ht.pdf","user6974":"https://93kp.github.io/study/ht.pdf","user8417":"https://93kp.github.io/study/ht.pdf","user2046":"https://93kp.github.io/study/ht.pdf",
-  "user9168":"https://93kp.github.io/study/ht.pdf","user4357":"https://93kp.github.io/study/ht.pdf","user5682":"https://93kp.github.io/study/ht.pdf","user7095":"https://93kp.github.io/study/ht.pdf",
-  "user1874":"https://93kp.github.io/study/ht.pdf","user6541":"https://93kp.github.io/study/ht.pdf","user3926":"https://93kp.github.io/study/ht.pdf","user8459":"https://93kp.github.io/study/ht.pdf",
-  "user2187":"https://93kp.github.io/study/ht.pdf","user5710":"https://93kp.github.io/study/ht.pdf","user9348":"https://93kp.github.io/study/ht.pdf","user4691":"https://93kp.github.io/study/ht.pdf",
-  "user7036":"https://93kp.github.io/study/ht.pdf","user2549":"https://93kp.github.io/study/ht.pdf","user8167":"https://93kp.github.io/study/ht.pdf","user6428":"https://93kp.github.io/study/ht.pdf",
-  "user3815":"https://93kp.github.io/study/ht.pdf","user9204":"https://93kp.github.io/study/ht.pdf","user4972":"https://93kp.github.io/study/ht.pdf","user7581":"https://93kp.github.io/study/ht.pdf",
-  "user1630":"https://93kp.github.io/study/ht.pdf","user6849":"https://93kp.github.io/study/ht.pdf","user5724":"https://93kp.github.io/study/ht.pdf","user3096":"https://93kp.github.io/study/ht.pdf",
-  "user8517":"https://93kp.github.io/study/ht.pdf","user2961":"https://93kp.github.io/study/ht.pdf","user7304":"https://93kp.github.io/study/ht.pdf","user4189":"https://93kp.github.io/study/ht.pdf",
-  "user9652":"https://93kp.github.io/study/ht.pdf","user1847":"https://93kp.github.io/study/ht.pdf","user5028":"https://93kp.github.io/study/ht.pdf","user6719":"https://93kp.github.io/study/ht.pdf",
-  "user3476":"https://93kp.github.io/study/ht.pdf","user8294":"https://93kp.github.io/study/ht.pdf","user9106":"https://93kp.github.io/study/ht.pdf","user2635":"https://93kp.github.io/study/ht.pdf",
-  "user5491":"https://93kp.github.io/study/ht.pdf","user7386":"https://93kp.github.io/study/ht.pdf","user1269":"https://93kp.github.io/study/ht.pdf","user6951":"https://93kp.github.io/study/ht.pdf",
-  "user4182":"https://93kp.github.io/study/ht.pdf","user9738":"https://93kp.github.io/study/ht.pdf","user2846":"https://93kp.github.io/study/ht.pdf","user5607":"https://93kp.github.io/study/ht.pdf",
-  "user7349":"https://93kp.github.io/study/ht.pdf","user3981":"https://93kp.github.io/study/ht.pdf","user8205":"https://93kp.github.io/study/ht.pdf","user1468":"https://93kp.github.io/study/ht.pdf",
-  "user6920":"https://93kp.github.io/study/ht.pdf","user4573":"https://93kp.github.io/study/ht.pdf","user9182":"https://93kp.github.io/study/ht.pdf","user3057":"https://93kp.github.io/study/ht.pdf",
-  "user6419":"https://93kp.github.io/study/ht.pdf","user2897":"https://93kp.github.io/study/ht.pdf","user8741":"https://93kp.github.io/study/ht.pdf","user5196":"https://93kp.github.io/study/ht.pdf",
-  "user7064":"https://93kp.github.io/study/ht.pdf","user1683":"https://93kp.github.io/study/ht.pdf","user9420":"https://93kp.github.io/study/ht.pdf","user3871":"https://93kp.github.io/study/ht.pdf",
-
-  /* ---- ht1.pdf (100 random) ---- */
-  "user7018":"https://93kp.github.io/study/ht1.pdf","user3920":"https://93kp.github.io/study/ht1.pdf","user8561":"https://93kp.github.io/study/ht1.pdf","user2437":"https://93kp.github.io/study/ht1.pdf",
-  "user9146":"https://93kp.github.io/study/ht1.pdf","user5684":"https://93kp.github.io/study/ht1.pdf","user7301":"https://93kp.github.io/study/ht1.pdf","user1896":"https://93kp.github.io/study/ht1.pdf",
-  "user6472":"https://93kp.github.io/study/ht1.pdf","user8241":"https://93kp.github.io/study/ht1.pdf","user3957":"https://93kp.github.io/study/ht1.pdf","user9624":"https://93kp.github.io/study/ht1.pdf",
-  "user5081":"https://93kp.github.io/study/ht1.pdf","user7419":"https://93kp.github.io/study/ht1.pdf","user2648":"https://93kp.github.io/study/ht1.pdf","user8750":"https://93kp.github.io/study/ht1.pdf",
-  "user1369":"https://93kp.github.io/study/ht1.pdf","user6842":"https://93kp.github.io/study/ht1.pdf","user4297":"https://93kp.github.io/study/ht1.pdf","user9163":"https://93kp.github.io/study/ht1.pdf",
-  "user3705":"https://93kp.github.io/study/ht1.pdf","user5982":"https://93kp.github.io/study/ht1.pdf","user7216":"https://93kp.github.io/study/ht1.pdf","user1842":"https://93kp.github.io/study/ht1.pdf",
-  "user8469":"https://93kp.github.io/study/ht1.pdf","user5037":"https://93kp.github.io/study/ht1.pdf","user6924":"https://93kp.github.io/study/ht1.pdf","user2571":"https://93kp.github.io/study/ht1.pdf",
-  "user9341":"https://93kp.github.io/study/ht1.pdf","user4106":"https://93kp.github.io/study/ht1.pdf","user5689":"https://93kp.github.io/study/ht1.pdf","user7032":"https://93kp.github.io/study/ht1.pdf",
-  "user1987":"https://93kp.github.io/study/ht1.pdf","user6504":"https://93kp.github.io/study/ht1.pdf","user3892":"https://93kp.github.io/study/ht1.pdf","user8206":"https://93kp.github.io/study/ht1.pdf",
-  "user2418":"https://93kp.github.io/study/ht1.pdf","user5793":"https://93kp.github.io/study/ht1.pdf","user9472":"https://93kp.github.io/study/ht1.pdf","user4620":"https://93kp.github.io/study/ht1.pdf",
-  "user7398":"https://93kp.github.io/study/ht1.pdf","user2864":"https://93kp.github.io/study/ht1.pdf","user8152":"https://93kp.github.io/study/ht1.pdf","user6047":"https://93kp.github.io/study/ht1.pdf",
-  "user3925":"https://93kp.github.io/study/ht1.pdf","user9284":"https://93kp.github.io/study/ht1.pdf","user4710":"https://93kp.github.io/study/ht1.pdf","user7538":"https://93kp.github.io/study/ht1.pdf",
-  "user1694":"https://93kp.github.io/study/ht1.pdf","user6801":"https://93kp.github.io/study/ht1.pdf","user5729":"https://93kp.github.io/study/ht1.pdf","user3018":"https://93kp.github.io/study/ht1.pdf",
-  "user8493":"https://93kp.github.io/study/ht1.pdf","user2641":"https://93kp.github.io/study/ht1.pdf","user7315":"https://93kp.github.io/study/ht1.pdf","user4096":"https://93kp.github.io/study/ht1.pdf",
-  "user9621":"https://93kp.github.io/study/ht1.pdf","user1748":"https://93kp.github.io/study/ht1.pdf","user5092":"https://93kp.github.io/study/ht1.pdf","user6713":"https://93kp.github.io/study/ht1.pdf",
-  "user3480":"https://93kp.github.io/study/ht1.pdf","user8267":"https://93kp.github.io/study/ht1.pdf","user9135":"https://93kp.github.io/study/ht1.pdf","user2619":"https://93kp.github.io/study/ht1.pdf",
-  "user5486":"https://93kp.github.io/study/ht1.pdf","user7361":"https://93kp.github.io/study/ht1.pdf","user1298":"https://93kp.github.io/study/ht1.pdf","user6973":"https://93kp.github.io/study/ht1.pdf",
-  "user4186":"https://93kp.github.io/study/ht1.pdf","user9740":"https://93kp.github.io/study/ht1.pdf","user2859":"https://93kp.github.io/study/ht1.pdf","user5601":"https://93kp.github.io/study/ht1.pdf",
-  "user7324":"https://93kp.github.io/study/ht1.pdf","user3986":"https://93kp.github.io/study/ht1.pdf","user8237":"https://93kp.github.io/study/ht1.pdf","user1482":"https://93kp.github.io/study/ht1.pdf",
-  "user6945":"https://93kp.github.io/study/ht1.pdf","user4561":"https://93kp.github.io/study/ht1.pdf","user9170":"https://93kp.github.io/study/ht1.pdf","user3084":"https://93kp.github.io/study/ht1.pdf",
-  "user6425":"https://93kp.github.io/study/ht1.pdf","user2879":"https://93kp.github.io/study/ht1.pdf","user8716":"https://93kp.github.io/study/ht1.pdf","user5169":"https://93kp.github.io/study/ht1.pdf",
-  "user7083":"https://93kp.github.io/study/ht1.pdf","user1672":"https://93kp.github.io/study/ht1.pdf","user9415":"https://93kp.github.io/study/ht1.pdf","user3856":"https://93kp.github.io/study/ht1.pdf"
-};
-
-/* ================= LOGIC ================= */
-
-document.getElementById("unlock").onclick = async ()=>{
-  const pw = document.getElementById("password").value.trim();
-  const pdfFile = accessMap[pw];
-  const status = document.getElementById("status");
-
-  if(!pw){ status.textContent="Enter password"; return; }
-  if(!pdfFile){ status.textContent="Invalid password"; return; }
-
-  document.getElementById("login").style.display="none";
-  const box = document.getElementById("pdf-container");
-  box.style.display="block";
-
-  const pdf = await pdfjsLib.getDocument(pdfFile).promise;
-  const scale = window.innerWidth < 600 ? 1.1 : 1.5;
-
-  for(let i=1;i<=pdf.numPages;i++){
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({scale});
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    box.appendChild(canvas);
-    await page.render({canvasContext:ctx, viewport}).promise;
-  }
-};
+  // IMPORTANT: tell pdf.js where its worker is
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.worker.min.js";
 </script>
 
+<style>
+  /* ===== Legendary UI (mobile-first) ===== */
+  :root{
+    --accent1:#ff7a18;
+    --accent2:#af002d;
+    --glass: rgba(255,255,255,0.06);
+    --muted: rgba(255,255,255,0.75);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+  body{
+    background: radial-gradient(800px 400px at 10% 10%, rgba(255,122,24,0.08), transparent),
+                linear-gradient(180deg,#071428,#0b1f2f 40%, #04141e 100%);
+    color:#eaf6ff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+
+  /* Big hero container */
+  .hero {
+    width:100%;
+    max-width:1100px;
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:20px;
+    align-items:start;
+  }
+
+  @media(min-width:920px){
+    .hero { grid-template-columns: 420px 1fr; }
+  }
+
+  /* Left card */
+  .card {
+    border-radius:20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    padding:28px;
+    box-shadow: 0 30px 80px rgba(2,6,23,0.6);
+    border: 1px solid rgba(255,255,255,0.04);
+    position:relative;
+  }
+
+  .logo {
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin-bottom:18px;
+  }
+  .logo .icon{
+    width:62px; height:62px; border-radius:12px;
+    background: linear-gradient(135deg,var(--accent1),var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:22px; color:#fff; box-shadow: 0 8px 30px rgba(175,0,45,0.18);
+  }
+  .logo h1{margin:0;font-size:20px; letter-spacing:0.6px;}
+  .logo p{margin:0;font-size:12px;color:var(--muted)}
+
+  .title { font-size:26px; margin:10px 0 6px; line-height:1.05; }
+  .desc { color:var(--muted); margin-bottom:18px; font-size:14px; }
+
+  .input-wrap { display:flex; gap:12px; align-items:center; }
+  input#password {
+    flex:1;
+    padding:14px 16px;
+    border-radius:12px;
+    border:none;
+    background:rgba(255,255,255,0.06);
+    color:#fff;
+    font-size:16px;
+    outline: none;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25);
+  }
+
+  .btn {
+    min-width:130px;
+    padding:14px 18px;
+    border-radius:12px;
+    border:none;
+    cursor:pointer;
+    font-weight:800;
+    letter-spacing:0.6px;
+    color:#08121a;
+    background: linear-gradient(90deg,var(--accent1),var(--accent2));
+    box-shadow: 0 12px 30px rgba(175,0,45,0.18), 0 6px 18px rgba(2,6,23,0.25);
+    transition: transform .12s ease, box-shadow .12s;
+  }
+  .btn:active{ transform: translateY(2px); }
+
+  .status { margin-top:12px; font-size:13px; color:#cfeef8; min-height:18px }
+
+  .hint { margin-top:18px; font-size:13px; color:rgba(255,255,255,0.6) }
+
+  /* Right: PDF viewer panel */
+  .viewer {
+    border-radius:20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    padding:18px;
+    min-height:360px;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .viewer-top {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .viewer-title { font-size:16px; font-weight:700; }
+  .viewer-actions { display:flex; gap:8px; align-items:center; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #eaf6ff;
+    padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700;
+  }
+
+  #pdf-container {
+    flex:1;
+    overflow:auto;
+    padding:10px;
+    display:none;
+    position:relative;
+  }
+  #pdf-container .canvas-wrap { margin-bottom:18px; display:flex; justify-content:center; }
+  canvas { background:#fff; border-radius:10px; box-shadow: 0 10px 30px rgba(2,6,23,0.5); width:100% !important; height:auto !important; }
+
+  /* watermark */
+  .watermark {
+    position:absolute;
+    top:50%; left:50%;
+    transform: translate(-50%,-50%) rotate(-25deg);
+    font-size:36px; color:rgba(255,255,255,0.06); font-weight:800;
+    pointer-events:none; z-index:40; white-space:nowrap;
+  }
+
+  /* loader overlay */
+  .loader {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.6));
+    z-index:60; border-radius:12px; display:none;
+  }
+  .spinner {
+    width:72px; height:72px; border-radius:50%;
+    background: conic-gradient(var(--accent1), var(--accent2), #ffffff22, var(--accent1));
+    animation:spin 1.3s linear infinite;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* back button */
+  .back {
+    padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.04);
+    color:#eaf6ff; cursor:pointer; font-weight:700;
+  }
+
+  /* ADMIN modal */
+  .admin-btn { position:absolute; right:14px; top:14px; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf6ff; padding:8px 10px; border-radius:8px; cursor:pointer; font-weight:700; font-size:12px; }
+  .modal {
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2000;
+    background: rgba(2,6,23,0.6);
+  }
+  .modal .panel {
+    width:95%; max-width:820px; background:#001021; border-radius:12px; padding:18px; color:#eaf6ff;
+  }
+  .modal textarea { width:100%; height:340px; background:#021826; color:#dff9ff; border-radius:8px; padding:12px; border:none; font-family:monospace; }
+  .modal .row { display:flex; gap:8px; margin-top:12px; justify-content:flex-end; }
+  .modal .small { font-size:13px; color:#9fdff2; }
+
+  footer { text-align:center; margin-top:14px; font-size:12px; color:rgba(255,255,255,0.45) }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <!-- LEFT: Login card -->
+  <div class="card" id="loginCard">
+    <button class="admin-btn" id="adminBtn">Admin</button>
+    <div class="logo">
+      <div class="icon">HT</div>
+      <div>
+        <h1>HIDDEN TRUTH</h1>
+        <p>Secure reader — enter your access code</p>
+      </div>
+    </div>
+
+    <div class="title">Open your copy — fast & secure</div>
+    <div class="desc">Enter the password you received. The book will open inside the page with a watermark (password + time).</div>
+
+    <div class="input-wrap" style="margin-top:16px">
+      <input id="password" placeholder="userXXXX" autocomplete="off" />
+      <button class="btn" id="unlockBtn">UNLOCK</button>
+    </div>
+
+    <div class="status" id="status"> </div>
+    <div class="hint">Tip: press Enter to unlock • Use the code sent to you</div>
+    <footer style="margin-top:12px">© 2026 Kushagra</footer>
+  </div>
+
+  <!-- RIGHT: Viewer -->
+  <div class="viewer" id="viewerPanel" style="display:none;">
+    <div class="viewer-top">
+      <div class="viewer-title" id="viewerTitle">Hidden Truth — Reader</div>
+      <div class="viewer-actions">
+        <button class="back" id="backBtn">← Back</button>
+        <button class="btn-ghost" id="downloadBtn" style="display:none">Download</button>
+      </div>
+    </div>
+
+    <div id="pdf-container">
+      <div class="watermark" id="watermark"></div>
+      <div id="canvasRoot"></div>
+      <div class="loader" id="loader"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin modal (hidden by default) -->
+<div class="modal" id="adminModal">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div><strong>Admin — All Passwords</strong><div class="small">You can copy or download CSV</div></div>
+      <div><button id="closeAdmin" class="btn-ghost">Close</button></div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <input id="adminKeyInput" placeholder="Enter admin key" style="padding:10px;border-radius:8px;border:none;background:#01202a;color:#dff9ff;width:100%;box-sizing:border-box"/>
+    </div>
+
+    <textarea id="adminList" readonly placeholder="Passwords will appear here once admin key is entered..."></textarea>
+
+    <div class="row">
+      <button id="copyBtn" class="btn-ghost">Copy</button>
+      <button id="downloadCsvBtn" class="btn">Download CSV</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================== PASSWORDS (200 unique random userXXXX) ================== */
+
+function randFourDigit(){
+  // return integer between 1000 and 9999 (inclusive)
+  return Math.floor(Math.random() * 9000) + 1000;
+}
+
+function generateUnique(count){
+  const s = new Set();
+  while(s.size < count){
+    s.add(randFourDigit());
+  }
+  return Array.from(s);
+}
+
+// generate 200 unique 4-digit numbers
+const randomNums = generateUnique(200);
+
+// shuffle them so assignment isn't predictable
+(function shuffleInPlace(a){
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+})(randomNums);
+
+// build accessMap: first 100 -> ht.pdf, next 100 -> ht1.pdf
+const accessMap = {};
+randomNums.slice(0,100).forEach(n => accessMap["user"+String(n)] = "ht.pdf");
+randomNums.slice(100).forEach(n => accessMap["user"+String(n)] = "ht1.pdf");
+
+// Optional: (developer) log first few for quick testing
+console.log("Sample random passwords:", Object.keys(accessMap).slice(0,8));
+
+/* ----------------- ADMIN KEY (change if you want) ----------------- */
+const ADMIN_KEY = "show200pls";
+
+/* ================== UI / PDF logic ================== */
+
+const unlockBtn = document.getElementById("unlockBtn");
+const passwordInput = document.getElementById("password");
+const statusEl = document.getElementById("status");
+const loginCard = document.getElementById("loginCard");
+const viewerPanel = document.getElementById("viewerPanel");
+const pdfContainer = document.getElementById("pdf-container");
+const canvasRoot = document.getElementById("canvasRoot");
+const loader = document.getElementById("loader");
+const watermarkDiv = document.getElementById("watermark");
+const backBtn = document.getElementById("backBtn");
+const viewerTitle = document.getElementById("viewerTitle");
+
+function showStatus(txt,color){
+  statusEl.textContent = txt || "";
+  if(color) statusEl.style.color = color; else statusEl.style.color = "";
+}
+
+function clearViewer(){
+  canvasRoot.innerHTML = "";
+  watermarkDiv.textContent = "";
+}
+
+function showLoader(on){
+  loader.style.display = on ? "flex" : "none";
+}
+
+/* handle Enter key */
+passwordInput.addEventListener("keydown", function(e){
+  if(e.key === "Enter") unlock();
+});
+
+/* Back button */
+backBtn.addEventListener("click", ()=>{
+  viewerPanel.style.display = "none";
+  pdfContainer.style.display = "none";
+  loginCard.style.display = "block";
+  clearViewer();
+  showStatus("");
+  passwordInput.value = "";
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+
+/* Unlock handler */
+unlockBtn.addEventListener("click", unlock);
+
+async function unlock(){
+  const pw = (passwordInput.value||"").trim();
+  if(!pw){ showStatus("Enter password", "tomato"); return; }
+  const pdfFile = accessMap[pw];
+  if(!pdfFile){ showStatus("Invalid password", "tomato"); return; }
+
+  // go to viewer
+  loginCard.style.display = "none";
+  viewerPanel.style.display = "flex";
+  pdfContainer.style.display = "block";
+  viewerTitle.textContent = `Hidden Truth — ${pdfFile.replace('.pdf','')}`;
+
+  // show watermark text (password + date)
+  const stamp = `${pw} • ${new Date().toLocaleString()}`;
+  watermarkDiv.textContent = stamp;
+
+  // render PDF
+  clearViewer();
+  showLoader(true);
+  try {
+    // pdfFile is relative path (ht.pdf / ht1.pdf) so it works on GitHub Pages
+    const loadingTask = pdfjsLib.getDocument(pdfFile);
+    const pdf = await loadingTask.promise;
+
+    const scaleBase = window.innerWidth < 600 ? 1.05 : 1.5;
+
+    for(let i=1;i<=pdf.numPages;i++){
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: scaleBase });
+      // create canvas
+      const wrap = document.createElement('div');
+      wrap.className = 'canvas-wrap';
+      const canvas = document.createElement('canvas');
+      wrap.appendChild(canvas);
+      canvasRoot.appendChild(wrap);
+
+      // set size and render
+      const ctx = canvas.getContext('2d');
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      // slight delay to keep UI smooth
+      await new Promise(r => setTimeout(r, 60));
+    }
+
+    showStatus("", "");
+  } catch (err) {
+    console.error("PDF render failed:", err);
+    showStatus("Failed to load PDF — check filenames & GitHub Pages", "tomato");
+  } finally {
+    showLoader(false);
+  }
+}
+
+/* ================== ADMIN modal logic ================== */
+const adminBtn = document.getElementById("adminBtn");
+const adminModal = document.getElementById("adminModal");
+const closeAdmin = document.getElementById("closeAdmin");
+const adminKeyInput = document.getElementById("adminKeyInput");
+const adminList = document.getElementById("adminList");
+const copyBtn = document.getElementById("copyBtn");
+const downloadCsvBtn = document.getElementById("downloadCsvBtn");
+
+adminBtn.addEventListener("click", ()=> {
+  adminModal.style.display = "flex";
+  adminKeyInput.value = "";
+  adminList.value = "";
+  adminKeyInput.focus();
+});
+
+closeAdmin.addEventListener("click", ()=> adminModal.style.display = "none");
+
+adminKeyInput.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") showAdminList();
+});
+
+function showAdminList(){
+  const key = (adminKeyInput.value||"").trim();
+  if(key !== ADMIN_KEY){
+    adminList.value = "Wrong admin key.";
+    return;
+  }
+  // build list: password,assigned_pdf
+  const lines = Object.keys(accessMap).map(pw => pw + "," + accessMap[pw]);
+  adminList.value = lines.join("\n");
+}
+
+copyBtn.addEventListener("click", async ()=>{
+  if(!adminList.value) return;
+  try {
+    await navigator.clipboard.writeText(adminList.value);
+    copyBtn.textContent = "Copied!";
+    setTimeout(()=> copyBtn.textContent = "Copy", 1500);
+  } catch(e){ console.error(e); alert("Copy failed"); }
+});
+
+downloadCsvBtn.addEventListener("click", ()=>{
+  if(!adminList.value) return alert("Enter admin key and load list first");
+  const blob = new Blob([adminList.value], {type: "text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "hidden-truth-passwords.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* Optional: show first few generated passwords in console for admin use */
+console.log("Admin sample passwords (first 8):", Object.keys(accessMap).slice(0,8));
+</script>
 </body>
 </html>

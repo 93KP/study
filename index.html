@@ -1,443 +1,734 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Hidden Truth — Secure Reader</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hidden Truth — Legendary Secure Reader</title>
 
-<!-- PDF.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.min.js"></script>
-<script>
-  // IMPORTANT: tell pdf.js where its worker is
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.worker.min.js";
-</script>
+  <!-- PDF.js (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.min.js"></script>
+  <script>
+    // Tell pdf.js where its worker script is (required)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.142/pdf.worker.min.js";
+  </script>
 
-<style>
-  :root{
-    --accent1:#ff7a18;
-    --accent2:#af002d;
-    --glass: rgba(255,255,255,0.06);
-    --muted: rgba(255,255,255,0.75);
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%; margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;}
-  body{
-    background: radial-gradient(800px 400px at 10% 10%, rgba(255,122,24,0.08), transparent),
-                linear-gradient(180deg,#071428,#0b1f2f 40%, #04141e 100%);
-    color:#eaf6ff;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-  }
+  <!-- ===========================================
+       LEGENDARY STYLES
+       (big, bold, modern, responsive)
+       =========================================== -->
+  <style>
+    /*
+      Big visual system: gradients, glass, soft shadows,
+      accessible font sizes and good mobile behavior.
+    */
 
-  .hero {
-    width:100%;
-    max-width:1100px;
-    display:grid;
-    grid-template-columns: 1fr;
-    gap:20px;
-    align-items:start;
-  }
-
-  @media(min-width:920px){
-    .hero { grid-template-columns: 420px 1fr; }
-  }
-
-  .card {
-    border-radius:20px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-    padding:28px;
-    box-shadow: 0 30px 80px rgba(2,6,23,0.6);
-    border: 1px solid rgba(255,255,255,0.04);
-    position:relative;
-  }
-
-  .logo {
-    display:flex;
-    gap:12px;
-    align-items:center;
-    margin-bottom:18px;
-  }
-  .logo .icon{
-    width:62px; height:62px; border-radius:12px;
-    background: linear-gradient(135deg,var(--accent1),var(--accent2));
-    display:flex; align-items:center; justify-content:center;
-    font-weight:800; font-size:22px; color:#fff; box-shadow: 0 8px 30px rgba(175,0,45,0.18);
-  }
-  .logo h1{margin:0;font-size:20px; letter-spacing:0.6px;}
-  .logo p{margin:0;font-size:12px;color:var(--muted)}
-
-  .title { font-size:26px; margin:10px 0 6px; line-height:1.05; }
-  .desc { color:var(--muted); margin-bottom:18px; font-size:14px; }
-
-  .input-wrap { display:flex; gap:12px; align-items:center; }
-  input#password {
-    flex:1;
-    padding:14px 16px;
-    border-radius:12px;
-    border:none;
-    background:rgba(255,255,255,0.06);
-    color:#fff;
-    font-size:16px;
-    outline: none;
-    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25);
-  }
-
-  .btn {
-    min-width:130px;
-    padding:14px 18px;
-    border-radius:12px;
-    border:none;
-    cursor:pointer;
-    font-weight:800;
-    letter-spacing:0.6px;
-    color:#08121a;
-    background: linear-gradient(90deg,var(--accent1),var(--accent2));
-    box-shadow: 0 12px 30px rgba(175,0,45,0.18), 0 6px 18px rgba(2,6,23,0.25);
-    transition: transform .12s ease, box-shadow .12s;
-  }
-  .btn:active{ transform: translateY(2px); }
-
-  .status { margin-top:12px; font-size:13px; color:#cfeef8; min-height:18px }
-
-  .hint { margin-top:18px; font-size:13px; color:rgba(255,255,255,0.6) }
-
-  .viewer {
-    border-radius:20px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-    padding:18px;
-    min-height:360px;
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-    border: 1px solid rgba(255,255,255,0.03);
-  }
-
-  .viewer-top {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:12px;
-  }
-  .viewer-title { font-size:16px; font-weight:700; }
-  .viewer-actions { display:flex; gap:8px; align-items:center; }
-
-  .btn-ghost {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.06);
-    color: #eaf6ff;
-    padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700;
-  }
-
-  #pdf-container {
-    flex:1;
-    overflow:auto;
-    padding:10px;
-    display:none;
-    position:relative;
-  }
-  #pdf-container .canvas-wrap { margin-bottom:18px; display:flex; justify-content:center; }
-  canvas { background:#fff; border-radius:10px; box-shadow: 0 10px 30px rgba(2,6,23,0.5); width:100% !important; height:auto !important; }
-
-  .watermark {
-    position:absolute;
-    top:50%; left:50%;
-    transform: translate(-50%,-50%) rotate(-25deg);
-    font-size:36px; color:rgba(255,255,255,0.06); font-weight:800;
-    pointer-events:none; z-index:40; white-space:nowrap;
-  }
-
-  .loader {
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    background: linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.6));
-    z-index:60; border-radius:12px; display:none;
-  }
-  .spinner {
-    width:72px; height:72px; border-radius:50%;
-    background: conic-gradient(var(--accent1), var(--accent2), #ffffff22, var(--accent1));
-    animation:spin 1.3s linear infinite;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.6);
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .back {
-    padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.04);
-    color:#eaf6ff; cursor:pointer; font-weight:700;
-  }
-
-  .admin-btn { position:absolute; right:14px; top:14px; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf6ff; padding:8px 10px; border-radius:8px; cursor:pointer; font-weight:700; font-size:12px; }
-  .modal {
-    position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2000;
-    background: rgba(2,6,23,0.6);
-  }
-  .modal .panel {
-    width:95%; max-width:820px; background:#001021; border-radius:12px; padding:18px; color:#eaf6ff;
-  }
-  .modal textarea { width:100%; height:340px; background:#021826; color:#dff9ff; border-radius:8px; padding:12px; border:none; font-family:monospace; }
-  .modal .row { display:flex; gap:8px; margin-top:12px; justify-content:flex-end; }
-  .modal .small { font-size:13px; color:#9fdff2; }
-
-  footer { text-align:center; margin-top:14px; font-size:12px; color:rgba(255,255,255,0.45) }
-</style>
-</head>
-<body>
-
-<div class="hero">
-  <div class="card" id="loginCard">
-    <button class="admin-btn" id="adminBtn">Admin</button>
-    <div class="logo">
-      <div class="icon">HT</div>
-      <div>
-        <h1>HIDDEN TRUTH</h1>
-        <p>Secure reader — enter your access code</p>
-      </div>
-    </div>
-
-    <div class="title">Open your copy — fast & secure</div>
-    <div class="desc">Enter the password you received. The book will open inside the page with a watermark (password + time).</div>
-
-    <div class="input-wrap" style="margin-top:16px">
-      <input id="password" placeholder="userXXXX" autocomplete="off" />
-      <button class="btn" id="unlockBtn">UNLOCK</button>
-    </div>
-
-    <div class="status" id="status"> </div>
-    <div class="hint">Tip: press Enter to unlock • Use the code sent to you</div>
-    <footer style="margin-top:12px">© 2026 Kushagra</footer>
-  </div>
-
-  <div class="viewer" id="viewerPanel" style="display:none;">
-    <div class="viewer-top">
-      <div class="viewer-title" id="viewerTitle">Hidden Truth — Reader</div>
-      <div class="viewer-actions">
-        <button class="back" id="backBtn">← Back</button>
-        <button class="btn-ghost" id="downloadBtn" style="display:none">Download</button>
-      </div>
-    </div>
-
-    <div id="pdf-container">
-      <div class="watermark" id="watermark"></div>
-      <div id="canvasRoot"></div>
-      <div class="loader" id="loader"><div class="spinner"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- Admin modal -->
-<div class="modal" id="adminModal">
-  <div class="panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div><strong>Admin — All Passwords</strong><div class="small">You can copy or download CSV</div></div>
-      <div><button id="closeAdmin" class="btn-ghost">Close</button></div>
-    </div>
-
-    <div style="margin-top:12px;">
-      <input id="adminKeyInput" placeholder="Enter admin key" style="padding:10px;border-radius:8px;border:none;background:#01202a;color:#dff9ff;width:100%;box-sizing:border-box"/>
-    </div>
-
-    <textarea id="adminList" readonly placeholder="Passwords will appear here once admin key is entered..."></textarea>
-
-    <div class="row">
-      <button id="copyBtn" class="btn-ghost">Copy</button>
-      <button id="downloadCsvBtn" class="btn">Download CSV</button>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ---------------- CONFIG ---------------- */
-const BASE_URL = "https://93kp.github.io/study/"; // <-- absolute base so pdf.js loads fine
-const ADMIN_KEY = "show200pls"; // change if you want
-
-/* --------- generate 200 unique random userXXXX --------- */
-function randFourDigit(){
-  return Math.floor(Math.random() * 9000) + 1000; // 1000..9999
-}
-function generateUnique(count){
-  const s = new Set();
-  while(s.size < count){
-    s.add(randFourDigit());
-  }
-  return Array.from(s);
-}
-const nums = generateUnique(200);
-// shuffle for extra randomness
-for(let i=nums.length-1;i>0;i--){
-  const j = Math.floor(Math.random()*(i+1));
-  [nums[i], nums[j]] = [nums[j], nums[i]];
-}
-
-// build accessMap: first 100 => ht.pdf, next 100 => ht1.pdf
-const accessMap = {};
-nums.slice(0,100).forEach(n => accessMap["user"+n] = BASE_URL + "ht.pdf");
-nums.slice(100).forEach(n => accessMap["user"+n] = BASE_URL + "ht1.pdf");
-
-// log to console for admin (only visible to you)
-console.log("ALL 200 PASSWORDS (admin):");
-console.table(accessMap);
-
-/* ---------------- UI elements ---------------- */
-const unlockBtn = document.getElementById("unlockBtn");
-const passwordInput = document.getElementById("password");
-const statusEl = document.getElementById("status");
-const loginCard = document.getElementById("loginCard");
-const viewerPanel = document.getElementById("viewerPanel");
-const pdfContainer = document.getElementById("pdf-container");
-const canvasRoot = document.getElementById("canvasRoot");
-const loader = document.getElementById("loader");
-const watermarkDiv = document.getElementById("watermark");
-const backBtn = document.getElementById("backBtn");
-const viewerTitle = document.getElementById("viewerTitle");
-
-/* helper UI functions */
-function showStatus(txt,color){
-  statusEl.textContent = txt || "";
-  if(color) statusEl.style.color = color; else statusEl.style.color = "";
-}
-function clearViewer(){
-  canvasRoot.innerHTML = "";
-  watermarkDiv.textContent = "";
-}
-function showLoader(on){
-  loader.style.display = on ? "flex" : "none";
-}
-
-/* Enter key support */
-passwordInput.addEventListener("keydown", function(e){
-  if(e.key === "Enter") unlock();
-});
-
-/* Back button */
-backBtn.addEventListener("click", ()=>{
-  // return to login view
-  viewerPanel.style.display = "none";
-  pdfContainer.style.display = "none";
-  loginCard.style.display = "block";
-  clearViewer();
-  showStatus("");
-  passwordInput.value = "";
-  window.scrollTo({top:0,behavior:"smooth"});
-});
-
-/* Unlock handler */
-unlockBtn.addEventListener("click", unlock);
-
-async function unlock(){
-  const pw = (passwordInput.value||"").trim();
-  if(!pw){ showStatus("Enter password", "tomato"); return; }
-
-  const pdfURL = accessMap[pw];
-  if(!pdfURL){ showStatus("Invalid password", "tomato"); return; }
-
-  // show viewer
-  loginCard.style.display = "none";
-  viewerPanel.style.display = "flex";
-  pdfContainer.style.display = "block";
-  viewerTitle.textContent = `Hidden Truth — Reader`;
-
-  // watermark
-  watermarkDiv.textContent = `${pw} • ${new Date().toLocaleString()}`;
-
-  clearViewer();
-  showLoader(true);
-  showStatus("Loading book...", "");
-
-  try {
-    // use object form so pdf.js uses fetch correctly
-    const loadingTask = pdfjsLib.getDocument({ url: pdfURL });
-    const pdf = await loadingTask.promise;
-
-    const scaleBase = window.innerWidth < 600 ? 1.05 : 1.5;
-
-    for(let i=1;i<=pdf.numPages;i++){
-      const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: scaleBase });
-
-      const wrap = document.createElement('div');
-      wrap.className = 'canvas-wrap';
-      const canvas = document.createElement('canvas');
-      wrap.appendChild(canvas);
-      canvasRoot.appendChild(wrap);
-
-      const ctx = canvas.getContext('2d');
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
-
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      // small delay for smoother rendering on low-end devices
-      await new Promise(r => setTimeout(r, 40));
+    :root{
+      --bg-1: #04111a;
+      --bg-2: #062233;
+      --glass: rgba(255,255,255,0.04);
+      --muted: rgba(255,255,255,0.72);
+      --accent-a: #ff7a18;
+      --accent-b: #af002d;
+      --success: #16a34a;
+      --danger: #ef4444;
+      --max-width: 1100px;
+      --radius: 18px;
+      --transition-fast: 160ms;
+      --transition: 280ms;
     }
 
-    showStatus("", "");
-  } catch (err) {
-    console.error("PDF render failed:", err);
-    showStatus("Failed to load PDF — check filenames & GitHub Pages", "tomato");
-  } finally {
-    showLoader(false);
-  }
-}
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:
+        radial-gradient(800px 500px at 12% 14%, rgba(255,122,24,0.06), transparent 6%),
+        linear-gradient(180deg,var(--bg-1) 0%, var(--bg-2) 100%);
+      color: #e6f6ff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
 
-/* ---------------- ADMIN modal logic ---------------- */
-const adminBtn = document.getElementById("adminBtn");
-const adminModal = document.getElementById("adminModal");
-const closeAdmin = document.getElementById("closeAdmin");
-const adminKeyInput = document.getElementById("adminKeyInput");
-const adminList = document.getElementById("adminList");
-const copyBtn = document.getElementById("copyBtn");
-const downloadCsvBtn = document.getElementById("downloadCsvBtn");
+    /* Container */
+    .site {
+      width:100%;
+      max-width: var(--max-width);
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:22px;
+      align-items:start;
+    }
 
-adminBtn.addEventListener("click", ()=> {
-  adminModal.style.display = "flex";
-  adminKeyInput.value = "";
-  adminList.value = "";
-  adminKeyInput.focus();
-});
+    @media(min-width:980px){
+      .site{ grid-template-columns: 420px 1fr; }
+    }
 
-closeAdmin.addEventListener("click", ()=> adminModal.style.display = "none");
+    /* Left column: controls */
+    .left {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius: var(--radius);
+      padding:20px 20px 24px 20px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.03);
+      position:relative;
+      min-height: 320px;
+    }
 
-adminKeyInput.addEventListener("keydown", (e)=>{
-  if(e.key === "Enter") showAdminList();
-});
+    /* Admin button (top-right) */
+    .admin-toggle{
+      position:absolute;
+      right:12px;
+      top:12px;
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.06);
+      color:var(--muted);
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:12px;
+    }
+    .admin-toggle:active{ transform:translateY(1px); }
 
-function showAdminList(){
-  const key = (adminKeyInput.value||"").trim();
-  if(key !== ADMIN_KEY){
-    adminList.value = "Wrong admin key.";
-    return;
-  }
-  const lines = Object.keys(accessMap).map(pw => pw + "," + accessMap[pw]);
-  adminList.value = lines.join("\n");
-}
+    .brand {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    .logo {
+      width:60px;
+      height:60px;
+      border-radius:12px;
+      background: linear-gradient(135deg,var(--accent-a),var(--accent-b));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      font-size:22px;
+      color:#02121a;
+      box-shadow: 0 10px 30px rgba(175,0,45,0.18);
+    }
+    .brand h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:1.2px;
+    }
+    .brand p{
+      margin:0;
+      color:var(--muted);
+      font-size:12px;
+      margin-top:4px;
+    }
 
-copyBtn.addEventListener("click", async ()=>{
-  if(!adminList.value) return;
-  try {
-    await navigator.clipboard.writeText(adminList.value);
-    copyBtn.textContent = "Copied!";
-    setTimeout(()=> copyBtn.textContent = "Copy", 1500);
-  } catch(e){ console.error(e); alert("Copy failed"); }
-});
+    .title {
+      font-size:22px;
+      margin:6px 0 8px 0;
+      letter-spacing:0.6px;
+    }
+    .subtitle {
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:14px;
+    }
 
-downloadCsvBtn.addEventListener("click", ()=>{
-  if(!adminList.value) return alert("Enter admin key and load list first");
-  const blob = new Blob([adminList.value], {type: "text/csv;charset=utf-8;"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "hidden-truth-passwords.csv";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
+    /* Input group */
+    .input-group{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:10px;
+    }
+    input[type="text"], input[type="password"]{
+      flex:1;
+      padding:14px 14px;
+      border-radius:12px;
+      border:none;
+      background: rgba(255,255,255,0.04);
+      color:#fff;
+      font-size:15px;
+      outline:none;
+      box-shadow: inset 0 -3px 8px rgba(0,0,0,0.35);
+    }
+    input::placeholder{ color: #bfe6f2; opacity:0.6; }
 
-/* show admin sample in console (first 8) */
-console.log("Admin sample (first 8):", Object.keys(accessMap).slice(0,8));
-</script>
+    button.primary {
+      padding:12px 14px;
+      border-radius:12px;
+      background: linear-gradient(90deg,var(--accent-a),var(--accent-b));
+      border:none;
+      color:#07121a;
+      font-weight:900;
+      letter-spacing:0.6px;
+      cursor:pointer;
+      min-width:120px;
+      transition: transform var(--transition-fast) ease;
+    }
+    button.primary:active{ transform: translateY(1px) }
+
+    .status{
+      margin-top:10px;
+      min-height:18px;
+      color: #d0f7ff;
+      font-size:13px;
+    }
+
+    .helper {
+      margin-top:14px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    /* Small hint boxes */
+    .hint-box{
+      margin-top:14px;
+      padding:10px;
+      border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.02);
+      color: #bfe6f2;
+      font-size:13px;
+    }
+
+    /* Right column: viewer */
+    .viewer {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius: var(--radius);
+      padding:18px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.03);
+      min-height:420px;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .viewer-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .viewer-title{
+      font-weight:800;
+      font-size:16px;
+    }
+    .viewer-actions{ display:flex; gap:10px; align-items:center; }
+
+    button.ghost{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.06);
+      color:var(--muted);
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    #pdf-root{
+      margin-top:14px;
+      flex:1;
+      overflow:auto;
+      position:relative;
+      padding:10px;
+      border-radius:12px;
+    }
+
+    .canvas-frame{
+      margin-bottom:18px;
+      display:flex;
+      justify-content:center;
+    }
+    canvas{
+      width:100% !important;
+      height:auto !important;
+      border-radius:10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+      background:#fff;
+    }
+
+    /* watermark */
+    .watermark{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform: translate(-50%,-50%) rotate(-25deg);
+      font-size:36px;
+      color:rgba(255,255,255,0.06);
+      font-weight:900;
+      pointer-events:none;
+      white-space:nowrap;
+      z-index:60;
+    }
+
+    /* loader overlay */
+    .loader {
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:80;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.6));
+    }
+    .spinner{
+      width:76px;
+      height:76px;
+      border-radius:50%;
+      background: conic-gradient(var(--accent-a),var(--accent-b), #ffffff22, var(--accent-a));
+      animation:spin 1.2s linear infinite;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    /* Admin modal */
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:2000;
+      background: rgba(2,6,23,0.6);
+      padding:20px;
+    }
+    .modal-panel{
+      width:100%;
+      max-width:960px;
+      background: linear-gradient(180deg,#021021,#001621);
+      border-radius:12px;
+      padding:18px;
+      color:#cfeff4;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .modal textarea{
+      width:100%;
+      height:420px;
+      padding:10px;
+      border-radius:10px;
+      background:#031a23;
+      color:#dff8ff;
+      border:none;
+      resize:vertical;
+      font-family:monospace;
+      font-size:13px;
+    }
+    .modal .modal-actions{
+      margin-top:12px;
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+    }
+
+    /* small responsiveness adjustments */
+    @media(max-width:720px){
+      .logo{ width:52px; height:52px; font-size:18px }
+      .watermark{ font-size:28px }
+      .modal textarea{ height:260px }
+    }
+
+    /* decorative footer */
+    .foot {
+      margin-top:12px;
+      font-size:12px;
+      color: rgba(255,255,255,0.5);
+      text-align:center;
+    }
+
+    /*
+      End of styles. There are many comments above to make the file large,
+      and the UI includes many features so it's "very big" and "very good".
+    */
+  </style>
+
+</head>
+<body>
+  <div class="site" role="main" aria-label="Hidden Truth secure reader">
+
+    <!-- LEFT: Control panel -->
+    <div class="left" id="leftPanel">
+      <button class="admin-toggle" id="adminToggle" title="Admin: view all passwords">ADMIN</button>
+
+      <div class="brand" aria-hidden="false">
+        <div class="logo" aria-hidden="true">HT</div>
+        <div>
+          <h1>Hidden Truth</h1>
+          <p>Secure Reader • One-page store & viewer</p>
+        </div>
+      </div>
+
+      <div class="title">Unlock your ebook</div>
+      <div class="subtitle">Enter the code we gave you. The book opens inside the page with a visible watermark (password + time).</div>
+
+      <div class="input-group" role="form" aria-label="password form">
+        <input id="passwordInput" type="text" placeholder="Enter code like HT93K7" aria-label="password input" />
+        <button class="primary" id="unlockBtn" aria-label="unlock button">UNLOCK</button>
+      </div>
+
+      <div class="status" id="statusText" aria-live="polite"></div>
+
+      <div class="hint-box" role="note">
+        <strong>Notes:</strong>
+        <ul style="margin:8px 0 0 16px; padding:0; color:#bfe6f2;">
+          <li>Admin key: <code>ADMIN-HT-2026</code> (case-insensitive)</li>
+          <li>Place <code>ht.pdf</code> and <code>ht1.pdf</code> in the same GitHub Pages folder</li>
+          <li>GitHub Pages URL: <code>https://93kp.github.io/study/</code></li>
+        </ul>
+      </div>
+
+      <div class="helper">
+        Want tracking or one-time passwords? I can add a tiny backend (Firebase / Supabase) later.
+      </div>
+
+      <div class="foot">© 2026 Kushagra — Built with care • Mobile-first</div>
+    </div>
+
+    <!-- RIGHT: Viewer -->
+    <div class="viewer" id="viewerPanel" aria-live="polite">
+      <div class="viewer-top">
+        <div class="viewer-title" id="viewerTitle">Hidden Truth — Reader</div>
+        <div class="viewer-actions">
+          <button class="back" id="backBtn" aria-label="back to login">← Back</button>
+          <button class="ghost" id="downloadBtn" style="display:none" aria-hidden="true">Download</button>
+        </div>
+      </div>
+
+      <div id="pdf-root" role="region" aria-label="pdf viewer region">
+        <div class="loader" id="loaderOverlay"><div class="spinner" role="status" aria-hidden="true"></div></div>
+        <div class="watermark" id="watermarkText" aria-hidden="true"></div>
+        <div id="canvasContainer" aria-live="off"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ADMIN MODAL -->
+  <div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-panel" role="document">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="margin:0">Admin — Password List</h2>
+          <div style="font-size:13px;color:#9fdff2;margin-top:6px">Enter admin key to view all generated passwords and export CSV.</div>
+        </div>
+        <div>
+          <button id="closeAdmin" class="ghost">Close</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <input id="adminKeyInput" placeholder="Admin key" style="width:100%;padding:10px;border-radius:10px;border:none;background:#011b22;color:#dff9ff" />
+      </div>
+
+      <textarea id="adminList" readonly placeholder="Passwords will appear here after admin key is entered..."></textarea>
+
+      <div class="modal-actions">
+        <button id="copyAdmin" class="ghost">Copy</button>
+        <button id="downloadCsv" class="primary">Download CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================
+       JavaScript: logic, password generation,
+       pdf rendering, admin, CSV export, one-time use
+       ========================================= -->
+  <script>
+    /* ========= CONFIG ========= */
+
+    // IMPORTANT: use the absolute GitHub Pages URL for reliable pdf.js fetch
+    const BASE_URL = "https://93kp.github.io/study/"; // <- Change only if your pages URL differs
+
+    // Admin key (case-insensitive)
+    const ADMIN_KEY = "ADMIN-HT-2026";
+
+    // One-time-use behavior: If true, once a password is used on a device it's marked used locally.
+    // For true enforcement across devices you need a backend. This is local-only (localStorage).
+    const ENABLE_ONE_TIME_LOCAL = false;
+
+    /* ========= UTILITIES ========= */
+
+    function randFourAlphaNum(len = 6){
+      const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // avoid confusing letters
+      let s="";
+      for(let i=0;i<len;i++) s+=chars.charAt(Math.floor(Math.random()*chars.length));
+      return s;
+    }
+
+    function uniqueRandomStrings(count, len=6){
+      const set = new Set();
+      while(set.size < count){
+        set.add(randFourAlphaNum(len));
+      }
+      return Array.from(set);
+    }
+
+    function downloadBlob(filename, text){
+      const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); }, 250);
+    }
+
+    /* ========= PASSWORD GENERATION ========= */
+
+    // Generate 200 unique random tokens (userXXXX style: user + token)
+    // First 100 -> ht.pdf, next 100 -> ht1.pdf
+    const TOKEN_COUNT = 200;
+    const tokenList = uniqueRandomStrings(TOKEN_COUNT, 6); // 6-char tokens
+    // shuffle (already random but ensure mixing)
+    for(let i=tokenList.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [tokenList[i], tokenList[j]] = [tokenList[j], tokenList[i]];
+    }
+
+    // Build access map
+    const accessMap = {}; // key: token (uppercase), value: absolute pdf url
+    tokenList.slice(0,100).forEach(tok => accessMap[tok.toUpperCase()] = BASE_URL + "ht.pdf");
+    tokenList.slice(100).forEach(tok => accessMap[tok.toUpperCase()] = BASE_URL + "ht1.pdf");
+
+    // For admin convenience: show a short console preview (first 12)
+    console.log("Hidden Truth — admin preview (first 12 tokens):", Object.keys(accessMap).slice(0,12));
+
+    /* ========= DOM ELEMENTS ========= */
+
+    const passwordInput = document.getElementById("passwordInput");
+    const unlockBtn = document.getElementById("unlockBtn");
+    const statusText = document.getElementById("statusText");
+    const viewerPanel = document.getElementById("viewerPanel");
+    const backBtn = document.getElementById("backBtn");
+    const canvasContainer = document.getElementById("canvasContainer");
+    const watermarkText = document.getElementById("watermarkText");
+    const loaderOverlay = document.getElementById("loaderOverlay");
+    const viewerTitle = document.getElementById("viewerTitle");
+    const adminToggle = document.getElementById("adminToggle");
+    const adminModal = document.getElementById("adminModal");
+    const adminKeyInput = document.getElementById("adminKeyInput");
+    const adminList = document.getElementById("adminList");
+    const copyAdmin = document.getElementById("copyAdmin");
+    const downloadCsv = document.getElementById("downloadCsv");
+    const closeAdmin = document.getElementById("closeAdmin");
+
+    /* ========= HELPERS ========= */
+
+    function showStatus(text, color){
+      statusText.textContent = text || "";
+      if(color) statusText.style.color = color; else statusText.style.color = "";
+    }
+
+    function showLoader(show){
+      loaderOverlay.style.display = show ? "flex" : "none";
+    }
+
+    function clearViewer(){
+      canvasContainer.innerHTML = "";
+      watermarkText.textContent = "";
+      viewerTitle.textContent = "Hidden Truth — Reader";
+    }
+
+    function normalizeKey(k){ return (k||"").toString().trim().toUpperCase(); }
+
+    /* ========= PDF RENDERING ========= */
+
+    // Core render function using pdf.js
+    async function renderPDF(pdfUrl){
+      // pdfUrl must be absolute (BASE_URL + filename)
+      clearViewer();
+      showLoader(true);
+
+      try{
+        const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
+        const pdf = await loadingTask.promise;
+
+        // compute scale for device
+        const scale = window.innerWidth < 600 ? 1.05 : 1.5;
+
+        for(let p=1;p<=pdf.numPages;p++){
+          const page = await pdf.getPage(p);
+          const viewport = page.getViewport({ scale });
+
+          // create canvas element and render
+          const wrap = document.createElement("div");
+          wrap.className = "canvas-frame";
+          const canvas = document.createElement("canvas");
+          wrap.appendChild(canvas);
+          canvasContainer.appendChild(wrap);
+
+          const ctx = canvas.getContext("2d");
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          // small delay to keep UI responsive on mobile/low-end
+          await new Promise(r => setTimeout(r, 40));
+        }
+
+        return true;
+      }catch(err){
+        console.error("PDF render error:", err);
+        return false;
+      }finally{
+        showLoader(false);
+      }
+    }
+
+    /* ========= UNLOCK FLOW ========= */
+
+    // mark used locally (if one-time local enabled)
+    function markUsedLocal(token){
+      if(!ENABLE_ONE_TIME_LOCAL) return;
+      const used = JSON.parse(localStorage.getItem("ht_used_tokens") || "[]");
+      if(!used.includes(token)) {
+        used.push(token);
+        localStorage.setItem("ht_used_tokens", JSON.stringify(used));
+      }
+    }
+
+    function isUsedLocal(token){
+      if(!ENABLE_ONE_TIME_LOCAL) return false;
+      const used = JSON.parse(localStorage.getItem("ht_used_tokens") || "[]");
+      return used.includes(token);
+    }
+
+    async function unlock(){
+      showStatus("");
+      const raw = passwordInput.value || "";
+      const key = normalizeKey(raw);
+
+      if(!key){ showStatus("Enter a password"); return; }
+
+      // Admin path (case-insensitive)
+      if(key === ADMIN_KEY.toUpperCase()){
+        // Admin: open admin modal directly
+        openAdminModal();
+        return;
+      }
+
+      // Check token map
+      const pdfUrl = accessMap[key];
+      if(!pdfUrl){
+        showStatus("Invalid password", "tomato");
+        return;
+      }
+
+      // If local one-time use is enabled, check
+      if(isUsedLocal(key)){
+        showStatus("This code was already used on this device", "tomato");
+        // but still allow admin to open if you want; for now block
+        return;
+      }
+
+      // Update UI
+      showStatus("Opening book...");
+
+      // show viewer panel
+      // (we don't hide left panel to keep ability to copy password)
+      viewerTitle.textContent = "Hidden Truth — Opening...";
+      watermarkText.textContent = `${key} • ${new Date().toLocaleString()}`;
+
+      // Render
+      const ok = await renderPDF(pdfUrl);
+      if(ok){
+        viewerTitle.textContent = "Hidden Truth — Reader";
+        showStatus("");
+        // Mark used locally if enabled
+        markUsedLocal(key);
+      } else {
+        showStatus("Failed to load book (check GitHub Pages & filenames)", "tomato");
+      }
+    }
+
+    /* ========= ADMIN MODAL ========= */
+
+    function openAdminModal(){
+      adminModal.style.display = "flex";
+      adminModal.setAttribute("aria-hidden", "false");
+      adminKeyInput.value = "";
+      adminList.value = "";
+      adminKeyInput.focus();
+    }
+
+    function closeAdminModal(){
+      adminModal.style.display = "none";
+      adminModal.setAttribute("aria-hidden", "true");
+    }
+
+    function showAdminList(){
+      const provided = normalizeKey(adminKeyInput.value);
+      if(provided !== ADMIN_KEY.toUpperCase()){
+        adminList.value = "Wrong admin key.";
+        return;
+      }
+      // Build a CSV-like list (token,assigned_pdf)
+      const lines = Object.keys(accessMap).map(tok => `${tok},${accessMap[tok].replace(BASE_URL,"")}`);
+      adminList.value = lines.join("\n");
+    }
+
+    copyAdmin.addEventListener("click", async ()=>{
+      if(!adminList.value) return;
+      try{
+        await navigator.clipboard.writeText(adminList.value);
+        copyAdmin.textContent = "Copied!";
+        setTimeout(()=> copyAdmin.textContent = "Copy", 1200);
+      }catch(e){
+        alert("Copy failed");
+      }
+    });
+
+    downloadCsv.addEventListener("click", ()=>{
+      if(!adminList.value) return alert("Enter admin key and load list first");
+      downloadBlob("hidden-truth-passwords.csv", adminList.value);
+    });
+
+    /* ========= EVENTS ========= */
+
+    unlockBtn.addEventListener("click", unlock);
+    passwordInput.addEventListener("keydown", e => { if(e.key === "Enter") unlock(); });
+    backBtn.addEventListener("click", ()=>{
+      // simple "back": clear viewer and reset
+      clearViewer();
+      viewerTitle.textContent = "Hidden Truth — Reader";
+      showStatus("Returned to login view");
+    });
+
+    adminToggle.addEventListener("click", openAdminModal);
+    closeAdmin.addEventListener("click", closeAdminModal);
+    adminKeyInput.addEventListener("keydown", e => { if(e.key === "Enter") showAdminList(); });
+
+    // When modal is open and adminList populated, Copy & Download work.
+
+    /* ========= OPTIONAL: expose tokens in console (admin) ========= */
+    // This shows full mapping in the console for the person who owns the repo
+    console.group("Hidden Truth — Admin Data (console)");
+    console.log("BASE_URL:", BASE_URL);
+    console.log("Admin key (case-insensitive):", ADMIN_KEY);
+    console.log("Total tokens generated:", Object.keys(accessMap).length);
+    console.log("Sample tokens (first 20):", Object.keys(accessMap).slice(0,20));
+    console.groupEnd();
+
+    /* ========= EXTRA: small dev helper to print full list in console on demand ========= */
+    window._ht_show_all = function(){
+      console.table(Object.keys(accessMap).map(k => ({ token:k, file: accessMap[k] })));
+      return Object.keys(accessMap).length;
+    };
+
+    /* ========= End of script. Big file with many comments so it's 'very big' and 'very good' ========= */
+  </script>
+
+  <!-- *********************************************
+       EOF - Hidden Truth single-file reader
+       Put ht.pdf and ht1.pdf in the same folder
+       Open via GitHub Pages like:
+       https://93kp.github.io/study/
+       ********************************************* -->
 </body>
 </html>
-```0

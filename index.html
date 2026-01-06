@@ -14,7 +14,6 @@
 </script>
 
 <style>
-  /* ===== Legendary UI (mobile-first) ===== */
   :root{
     --accent1:#ff7a18;
     --accent2:#af002d;
@@ -33,7 +32,6 @@
     padding:20px;
   }
 
-  /* Big hero container */
   .hero {
     width:100%;
     max-width:1100px;
@@ -47,7 +45,6 @@
     .hero { grid-template-columns: 420px 1fr; }
   }
 
-  /* Left card */
   .card {
     border-radius:20px;
     background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
@@ -107,7 +104,6 @@
 
   .hint { margin-top:18px; font-size:13px; color:rgba(255,255,255,0.6) }
 
-  /* Right: PDF viewer panel */
   .viewer {
     border-radius:20px;
     background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
@@ -147,7 +143,6 @@
   #pdf-container .canvas-wrap { margin-bottom:18px; display:flex; justify-content:center; }
   canvas { background:#fff; border-radius:10px; box-shadow: 0 10px 30px rgba(2,6,23,0.5); width:100% !important; height:auto !important; }
 
-  /* watermark */
   .watermark {
     position:absolute;
     top:50%; left:50%;
@@ -156,7 +151,6 @@
     pointer-events:none; z-index:40; white-space:nowrap;
   }
 
-  /* loader overlay */
   .loader {
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     background: linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.6));
@@ -170,13 +164,11 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* back button */
   .back {
     padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.04);
     color:#eaf6ff; cursor:pointer; font-weight:700;
   }
 
-  /* ADMIN modal */
   .admin-btn { position:absolute; right:14px; top:14px; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf6ff; padding:8px 10px; border-radius:8px; cursor:pointer; font-weight:700; font-size:12px; }
   .modal {
     position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2000;
@@ -195,7 +187,6 @@
 <body>
 
 <div class="hero">
-  <!-- LEFT: Login card -->
   <div class="card" id="loginCard">
     <button class="admin-btn" id="adminBtn">Admin</button>
     <div class="logo">
@@ -219,7 +210,6 @@
     <footer style="margin-top:12px">© 2026 Kushagra</footer>
   </div>
 
-  <!-- RIGHT: Viewer -->
   <div class="viewer" id="viewerPanel" style="display:none;">
     <div class="viewer-top">
       <div class="viewer-title" id="viewerTitle">Hidden Truth — Reader</div>
@@ -237,7 +227,7 @@
   </div>
 </div>
 
-<!-- Admin modal (hidden by default) -->
+<!-- Admin modal -->
 <div class="modal" id="adminModal">
   <div class="panel">
     <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -259,13 +249,14 @@
 </div>
 
 <script>
-/* ================== PASSWORDS (200 unique random userXXXX) ================== */
+/* ---------------- CONFIG ---------------- */
+const BASE_URL = "https://93kp.github.io/study/"; // <-- absolute base so pdf.js loads fine
+const ADMIN_KEY = "show200pls"; // change if you want
 
+/* --------- generate 200 unique random userXXXX --------- */
 function randFourDigit(){
-  // return integer between 1000 and 9999 (inclusive)
-  return Math.floor(Math.random() * 9000) + 1000;
+  return Math.floor(Math.random() * 9000) + 1000; // 1000..9999
 }
-
 function generateUnique(count){
   const s = new Set();
   while(s.size < count){
@@ -273,31 +264,23 @@ function generateUnique(count){
   }
   return Array.from(s);
 }
+const nums = generateUnique(200);
+// shuffle for extra randomness
+for(let i=nums.length-1;i>0;i--){
+  const j = Math.floor(Math.random()*(i+1));
+  [nums[i], nums[j]] = [nums[j], nums[i]];
+}
 
-// generate 200 unique 4-digit numbers
-const randomNums = generateUnique(200);
-
-// shuffle them so assignment isn't predictable
-(function shuffleInPlace(a){
-  for(let i=a.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-})(randomNums);
-
-// build accessMap: first 100 -> ht.pdf, next 100 -> ht1.pdf
+// build accessMap: first 100 => ht.pdf, next 100 => ht1.pdf
 const accessMap = {};
-randomNums.slice(0,100).forEach(n => accessMap["user"+String(n)] = "ht.pdf");
-randomNums.slice(100).forEach(n => accessMap["user"+String(n)] = "ht1.pdf");
+nums.slice(0,100).forEach(n => accessMap["user"+n] = BASE_URL + "ht.pdf");
+nums.slice(100).forEach(n => accessMap["user"+n] = BASE_URL + "ht1.pdf");
 
-// Optional: (developer) log first few for quick testing
-console.log("Sample random passwords:", Object.keys(accessMap).slice(0,8));
+// log to console for admin (only visible to you)
+console.log("ALL 200 PASSWORDS (admin):");
+console.table(accessMap);
 
-/* ----------------- ADMIN KEY (change if you want) ----------------- */
-const ADMIN_KEY = "show200pls";
-
-/* ================== UI / PDF logic ================== */
-
+/* ---------------- UI elements ---------------- */
 const unlockBtn = document.getElementById("unlockBtn");
 const passwordInput = document.getElementById("password");
 const statusEl = document.getElementById("status");
@@ -310,27 +293,27 @@ const watermarkDiv = document.getElementById("watermark");
 const backBtn = document.getElementById("backBtn");
 const viewerTitle = document.getElementById("viewerTitle");
 
+/* helper UI functions */
 function showStatus(txt,color){
   statusEl.textContent = txt || "";
   if(color) statusEl.style.color = color; else statusEl.style.color = "";
 }
-
 function clearViewer(){
   canvasRoot.innerHTML = "";
   watermarkDiv.textContent = "";
 }
-
 function showLoader(on){
   loader.style.display = on ? "flex" : "none";
 }
 
-/* handle Enter key */
+/* Enter key support */
 passwordInput.addEventListener("keydown", function(e){
   if(e.key === "Enter") unlock();
 });
 
 /* Back button */
 backBtn.addEventListener("click", ()=>{
+  // return to login view
   viewerPanel.style.display = "none";
   pdfContainer.style.display = "none";
   loginCard.style.display = "block";
@@ -346,25 +329,26 @@ unlockBtn.addEventListener("click", unlock);
 async function unlock(){
   const pw = (passwordInput.value||"").trim();
   if(!pw){ showStatus("Enter password", "tomato"); return; }
-  const pdfFile = accessMap[pw];
-  if(!pdfFile){ showStatus("Invalid password", "tomato"); return; }
 
-  // go to viewer
+  const pdfURL = accessMap[pw];
+  if(!pdfURL){ showStatus("Invalid password", "tomato"); return; }
+
+  // show viewer
   loginCard.style.display = "none";
   viewerPanel.style.display = "flex";
   pdfContainer.style.display = "block";
-  viewerTitle.textContent = `Hidden Truth — ${pdfFile.replace('.pdf','')}`;
+  viewerTitle.textContent = `Hidden Truth — Reader`;
 
-  // show watermark text (password + date)
-  const stamp = `${pw} • ${new Date().toLocaleString()}`;
-  watermarkDiv.textContent = stamp;
+  // watermark
+  watermarkDiv.textContent = `${pw} • ${new Date().toLocaleString()}`;
 
-  // render PDF
   clearViewer();
   showLoader(true);
+  showStatus("Loading book...", "");
+
   try {
-    // pdfFile is relative path (ht.pdf / ht1.pdf) so it works on GitHub Pages
-    const loadingTask = pdfjsLib.getDocument(pdfFile);
+    // use object form so pdf.js uses fetch correctly
+    const loadingTask = pdfjsLib.getDocument({ url: pdfURL });
     const pdf = await loadingTask.promise;
 
     const scaleBase = window.innerWidth < 600 ? 1.05 : 1.5;
@@ -372,21 +356,20 @@ async function unlock(){
     for(let i=1;i<=pdf.numPages;i++){
       const page = await pdf.getPage(i);
       const viewport = page.getViewport({ scale: scaleBase });
-      // create canvas
+
       const wrap = document.createElement('div');
       wrap.className = 'canvas-wrap';
       const canvas = document.createElement('canvas');
       wrap.appendChild(canvas);
       canvasRoot.appendChild(wrap);
 
-      // set size and render
       const ctx = canvas.getContext('2d');
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
 
       await page.render({ canvasContext: ctx, viewport }).promise;
-      // slight delay to keep UI smooth
-      await new Promise(r => setTimeout(r, 60));
+      // small delay for smoother rendering on low-end devices
+      await new Promise(r => setTimeout(r, 40));
     }
 
     showStatus("", "");
@@ -398,7 +381,7 @@ async function unlock(){
   }
 }
 
-/* ================== ADMIN modal logic ================== */
+/* ---------------- ADMIN modal logic ---------------- */
 const adminBtn = document.getElementById("adminBtn");
 const adminModal = document.getElementById("adminModal");
 const closeAdmin = document.getElementById("closeAdmin");
@@ -426,7 +409,6 @@ function showAdminList(){
     adminList.value = "Wrong admin key.";
     return;
   }
-  // build list: password,assigned_pdf
   const lines = Object.keys(accessMap).map(pw => pw + "," + accessMap[pw]);
   adminList.value = lines.join("\n");
 }
@@ -453,8 +435,9 @@ downloadCsvBtn.addEventListener("click", ()=>{
   URL.revokeObjectURL(url);
 });
 
-/* Optional: show first few generated passwords in console for admin use */
-console.log("Admin sample passwords (first 8):", Object.keys(accessMap).slice(0,8));
+/* show admin sample in console (first 8) */
+console.log("Admin sample (first 8):", Object.keys(accessMap).slice(0,8));
 </script>
 </body>
 </html>
+```0
